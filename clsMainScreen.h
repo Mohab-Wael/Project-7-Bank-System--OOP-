@@ -12,7 +12,7 @@
 #include "clsLoginRegisterScreen.h"
 #include "clsCurrency.h"
 #include "clsGlobal.h"
-#include "clsCurrencyScreen.h"
+#include "clsCurrencyExchangeMainScreen.h"
 
 using namespace std;
 
@@ -84,7 +84,7 @@ private:
 
     static void _ShowCurrencyExchangeScreen()
     {
-        clsCurrencyScreen::ShowCurrencyExchangeScreen();
+        clsCurrencyExchangeMainScreen::ShowCurrencyExchangeScreen();
 	}
 
     static void _Logout()
