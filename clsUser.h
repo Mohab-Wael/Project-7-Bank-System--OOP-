@@ -6,6 +6,8 @@
 #include <vector>
 #include <fstream>
 #include "clsGlobal.h"
+#include "clsDate.h"
+#include "clsUtil.h"
 
 
 using namespace std;
@@ -15,6 +17,7 @@ class clsUser : public clsPerson
 private:
 
     enum enMode { EmptyMode = 0, UpdateMode = 1, AddNewMode = 2 };
+
     enMode _Mode;
     string _UserName;
     string _Password;
@@ -22,13 +25,42 @@ private:
 
     bool _MarkedForDelete = false;
 
+    struct stLoginRegisterRecord;
+    static stLoginRegisterRecord _ConvertLoginRegisterLineToRecord(string DataLine)
+    {
+        stLoginRegisterRecord LoginRegisterRecord;
+
+        vector <string> vString = clsString::Split(DataLine, "#//#");
+
+        LoginRegisterRecord.DateTime = vString[0];
+        LoginRegisterRecord.Username = vString[1];
+        LoginRegisterRecord.Password = clsUtil::DecryptText(vString[2]);
+        LoginRegisterRecord.Permissions = stoi(vString[3]);
+
+        return LoginRegisterRecord;
+    }
+
+
+    string _PrepareLoginRecord(string Seperator="#//#")
+    {
+        string LoginRecord = "";
+
+        LoginRecord += clsDate::GetSystemDateTimeString() + Seperator;
+        LoginRecord += UserName + Seperator;
+        LoginRecord += clsUtil::EncryptText(Password) + Seperator;
+        LoginRecord += to_string(Permissions);
+        return LoginRecord;
+    }
+
+
+
     static clsUser _ConvertLinetoUserObject(string Line, string Seperator = "#//#")
     {
         vector<string> vUserData;
         vUserData = clsString::Split(Line, Seperator);
 
         return clsUser(enMode::UpdateMode, vUserData[0], vUserData[1], vUserData[2],
-            vUserData[3], vUserData[4], vUserData[5], stoi(vUserData[6]));
+            vUserData[3], vUserData[4], clsUtil::DecryptText(vUserData[5]), stoi(vUserData[6]));
 
     }
 
@@ -41,7 +73,7 @@ private:
         UserRecord += User.Email + Seperator;
         UserRecord += User.Phone + Seperator;
         UserRecord += User.UserName + Seperator;
-        UserRecord += User.Password + Seperator;
+        UserRecord += clsUtil::EncryptText(User.Password) + Seperator;
         UserRecord += to_string(User.Permissions);
 
         return UserRecord;
@@ -154,10 +186,20 @@ private:
 
 public:
 
+  
     enum enPermissions {
         eAll = -1, pListClients = 1, pAddNewClient = 2, pDeleteClient = 4,
-        pUpdateClients = 8, pFindClient = 16, pTranactions = 32, pManageUsers = 64
+		pUpdateClients = 8, pFindClient = 16, pTranactions = 32, pManageUsers = 64, pLoginRegister = 128, pCurrencyExchange = 256
     };
+
+    struct stLoginRegisterRecord
+    {
+        string DateTime;
+        string Username;
+        string Password;
+        int Permissions;
+    };
+
 
     clsUser(enMode Mode, string FirstName, string LastName,
         string Email, string Phone, string UserName, string Password,
@@ -351,7 +393,7 @@ public:
     }
 
      bool CheckAccessPermission(clsUser::enPermissions Permission)
-    {
+     {
         if (Permission == clsUser::enPermissions::eAll)
             return true;
        
@@ -359,7 +401,48 @@ public:
             return true;      
         else
             return false;
-    }
+     }
+
+     void RegisterLogIn()
+     {
+         string DataLine = _PrepareLoginRecord();
+
+         fstream MyFile;
+
+         MyFile.open("LoginRegister.txt", ios::out | ios::app);
+         if (MyFile.is_open())
+         {
+             MyFile << DataLine << endl;
+
+             MyFile.close();
+         }
+     }
+
+
+     static vector <stLoginRegisterRecord> GetLoginRegisterList()
+     {
+         vector <stLoginRegisterRecord> vLoginRegisterRecord;
+
+         fstream MyFile;
+
+         MyFile.open("LoginRegister.txt", ios::in); // Write mode
+         if (MyFile.is_open())
+         {
+
+             string Line;
+
+             stLoginRegisterRecord LoginRegisterRecord;
+
+             while (getline(MyFile, Line))
+             {
+                 LoginRegisterRecord = _ConvertLoginRegisterLineToRecord(Line);
+                 vLoginRegisterRecord.push_back(LoginRegisterRecord);
+             }
+             MyFile.close();
+         }
+         return vLoginRegisterRecord;
+     }
+
 
 };
 

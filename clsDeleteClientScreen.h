@@ -36,6 +36,7 @@ public:
 
 		_DrawScreenHeader("\t  Delete Client Screen");
 
+	
 		string AccountNumber = "";
 		cout << "\nPlease enter Account Number ? ";
 		AccountNumber = clsInputValidate::ReadString();
